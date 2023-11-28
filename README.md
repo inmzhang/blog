@@ -11,7 +11,7 @@ To build the site locally:
 
 ```console
 > git clone https://github.com/inmzhang/blog.git
-> cd blog.rust-lang.org
+> cd blog
 > cargo run
 ```
 
@@ -38,7 +38,7 @@ When writing a new blog post, keep in mind the file headers:
 ---
 layout: post
 title: Title of the blog post
-author: Blog post author (or on behalf of which team)
-release: true (to be only used for official posts about Rust releases announcements)
+author: Blog post author
+release: true (false for drafting)
 ---
 ```
