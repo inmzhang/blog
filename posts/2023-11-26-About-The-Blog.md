@@ -33,9 +33,12 @@ Firstly, I love the style of the rust blog. It's simple and consice. Secondly, t
 generator codebase is pretty small. I can read through the source code easilly and
 make whatever changes I want at ease.
 
-I cut off most unrelevant informations from it, e.g. the feed and metas in the headers.
-And additionaly, I added [katex](https://katex.org/) for math typesetting support to the
-code. Suprisingly, the version of `highlight.js` it used did not support some common languages
-like Python. I have changed it to incoorperate the most of common language set.
+Here are the things I changed for the blog:
+- Cut off most unrelevant informations from it, e.g. the feed and metas in the headers.
+- Add [katex](https://katex.org/) for math typesetting support to the code. 
+- Update the version of `highlight.js` to support the most common set of languages.
+- Change the functionality of _release_ file header. Now the posts with `release=false`
+will only be rendered when the `PREVIEW` env var is on. This is for the drafting purpose.
+- Add justfile for building and serving
 
 That's all for now. Here's the blog. Fingers crossed I can maintain it!
