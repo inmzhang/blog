@@ -31,7 +31,7 @@ pub(crate) struct Manifest {
     pub(crate) link_text: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize,Clone)]
 pub(crate) struct Blog {
     title: String,
     index_title: String,
@@ -116,6 +116,15 @@ impl Blog {
 
     pub(crate) fn posts(&self) -> &[Post] {
         &self.posts
+    }
+
+    pub(crate) fn retain_release_posts(&self) -> Self {
+        let mut posts = self.posts.clone();
+        posts.retain(|post| post.release);
+        Self {
+            posts,
+            ..self.clone()
+        }
     }
 }
 
