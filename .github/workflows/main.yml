@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  build and deploy:
+  deploy:
     if: ${{ github.ref == 'refs/heads/master' }}
     
     permissions:
