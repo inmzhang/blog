@@ -31,10 +31,8 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - id: deployment
+      - name: Deployment
         uses: peaceiris/actions-gh-pages@v3
         with:
-          publish_branch: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: site
-          force_orphan: true
