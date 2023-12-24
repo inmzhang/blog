@@ -250,6 +250,7 @@ impl<'a> Generator<'a> {
         copy_dir("static/images", &self.out_directory)?;
         copy_dir("static/styles", &self.out_directory)?;
         copy_dir("static/scripts", &self.out_directory)?;
+        copy_dir("static/wasm_gen", &self.out_directory)?;
         Ok(())
     }
 

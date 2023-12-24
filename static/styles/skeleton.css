@@ -437,7 +437,7 @@ hr {
 }
 .wasm-embed {
   width: 100%; /* Adjust the width as needed */
-  aspect-ratio: 16/9;
+  aspect-ratio: 16/12;
   margin: 20px auto; /* Centers the element and provides some spacing */
   border: 1px solid #ddd; /* Optional: adds a border around the iframe */
   border-radius: 4px; /* Optional: rounds the corners */
