@@ -1,0 +1,99 @@
+<!doctype html>
+<meta content="text/html; charset=utf-8" http-equiv=Content-Type>
+<meta content="width=device-width,initial-scale=1.0,user-scalable=no" name=viewport>
+<title>Aoc23 Day21</title>
+<script type=module>
+import init, * as bindings from './aoc23-day21-ff0c35bbdedaf5c9fdd5f06ac2d82755517ca9648160aa4f80809fa129d5c267d341de7ec2c5d171d746c903fe005dea.js';
+init('./aoc23-day21-ff0c35bbdedaf5c9fdd5f06ac2d82755517ca9648160aa4f80809fa129d5c267d341de7ec2c5d171d746c903fe005dea_bg.wasm');
+window.wasmBindings = bindings;
+
+</script>
+<style>
+  html {
+    touch-action: manipulation
+  }
+
+  body {
+    background: #909090
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body {
+      background: #404040
+    }
+  }
+
+  body,
+  html {
+    overflow: hidden;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 100%;
+    width: 100%
+  }
+
+  canvas {
+    margin-right: auto;
+    margin-left: auto;
+    display: block;
+    position: absolute;
+    top: 0%;
+    left: 50%;
+    transform: translate(-50%, 0%)
+  }
+
+  .centered {
+    margin-right: auto;
+    margin-left: auto;
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #f0f0f0;
+    font-size: 24px;
+    font-family: Ubuntu-Light, Helvetica, sans-serif;
+    text-align: center
+  }
+
+  .lds-dual-ring {
+    display: inline-block;
+    width: 24px;
+    height: 24px
+  }
+
+  .lds-dual-ring:after {
+    content: " ";
+    display: block;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    border-color: #fff;
+    animation: lds-dual-ring 1.2s linear infinite
+  }
+
+  @keyframes lds-dual-ring {
+    0% {
+      transform: rotate(0deg)
+    }
+
+    100% {
+      transform: rotate(360deg)
+    }
+  }
+</style>
+<link as=fetch crossorigin
+  href=./aoc23-day21-ff0c35bbdedaf5c9fdd5f06ac2d82755517ca9648160aa4f80809fa129d5c267d341de7ec2c5d171d746c903fe005dea_bg.wasm
+  integrity=sha384-_ww1u97a9cn91fBqwtgnVVF8qWSBYKpPgICfoSnVwmfTQd5-wsXRcddGyQP-AF3q rel=preload type=application/wasm>
+<link crossorigin
+  href=./aoc23-day21-ff0c35bbdedaf5c9fdd5f06ac2d82755517ca9648160aa4f80809fa129d5c267d341de7ec2c5d171d746c903fe005dea.js
+  integrity=sha384-sQoKzjn5ur4TJPfztLLo7rQOAQQhc7Ml9wBtwTfsPuTBmrXUZWgg0DR5mTxJ0vKJ rel=modulepreload>
+</head>
+
+<body><canvas id=canvas></canvas>
+  <script>if ('serviceWorker' in navigator && window.location.hash !== "#dev") {window.addEventListener('load', function () {navigator.serviceWorker.register('sw.js')})}</script>
+</body>
+
+</html>

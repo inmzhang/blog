@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>AOC2023 Day21: Step Counter | Inm&#x27;s Blog</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Inm Zhang's personal blog.">
+    <!-- favicons -->
+<link rel="icon" type="image/svg+xml" href="../../../images/cuddlyferris.svg">
+<!-- styles -->
+<link rel="stylesheet" href="../../../styles/vendor.css"/>
+<link rel="stylesheet" href="../../../styles/fonts.css"/>
+<link rel="stylesheet" href="../../../styles/app.css"/>
+<link rel="stylesheet" href="../../../styles/highlight.css"/>
+<link rel="stylesheet" href="../../../styles/katex.css"/>
+
+  </head>
+  <body>
+    <nav class="flex flex-row justify-center justify-end-l items-center flex-wrap ph2 pl3-ns pr4-ns">
+  <div class="brand flex-auto w-100 w-auto-l self-start tc tl-l">
+    <a href="../../../">
+     <img class="v-mid ml0-l" alt="Ferris Logo" src="../../../images/cuddlyferris.svg"> 
+     <span class="dib ml1 ml0-l">Inm&#x27;s Blog</span>
+    </images>
+  </div>
+  
+  <ul class="nav list w-100 w-auto-l flex flex-none flex-row flex-wrap justify-center justify-end-l items-center pv2 ph0 ph4-ns">
+    <li class="tc pv2 ph2 ph4-ns flex-20-s"><a href="https://inmzhang.github.io/paste">Clipboard</a></li>
+    <li class="tc pv2 ph2 ph4-ns flex-20-s"><a href="https://github.com/inmzhang">Github</a></li>
+    <li class="tc pv2 ph2 ph4-ns flex-20-s"><a href="https://scholar.google.com/citations?user=fhTGnZwAAAAJ&hl=en">Scholar</a></li>
+    <li class="tc pv2 ph2 ph4-ns flex-20-s"><a href="https://github.com/inmzhang/blog">Source</a></li>
+  </ul>
+</nav>
+
+<section id="AOC2023 Day21: Step Counter" class="white">
+  <div class="w-100 mw-none ph3 mw8-m mw8-l center f3">
+    <header>
+      <h2>AOC2023 Day21: Step Counter</h2>
+      <div class="highlight mt2 mb3"></div>
+    </header>
+
+    <div class="publish-date-author">Dec. 23, 2023 &middot; Yiming Zhang
+    
+    </div>
+
+    <div class="post">
+      <p>Today's part2 is quite tricky, it's hard to come up with a clever solution without visualizing the input and discovering the
+structure of it. So I think it is time to learn and show the capability of <code>egui</code>. Then I will run the visualization on the web
+with the built <strong>WASM</strong> target.</p>
+<blockquote>
+<p>The puzzel</p>
+<p>Start from a point(S), we can move in the four directions while blocked by the rocks(#). We need to calculate the number of places
+we can get to after N steps of movement.</p>
+</blockquote>
+<h2><a href="#part1" aria-hidden="true" class="anchor" id="part1"></a>Part1</h2>
+<p>Part1 restricts the movement in a finite space, e.g.</p>
+<pre><code class="language-text">...........
+.....###.#.
+.###.##..#.
+..#.#...#..
+....#.#....
+.##..S####.
+.##..#...#.
+.......##..
+.##.#.####.
+.##..##.##.
+...........
+</code></pre>
+<p>It's easy to solve the problem, but I decide to visualize the process to familiar myself with <code>egui</code> and <code>trunk</code>, which is used
+to build wasm target.</p>
+<p>Starting with the <a href="https://github.com/emilk/eframe_template">eframe_template</a>, what I need to change is just the main logic of my
+app. Since <code>egui</code> is an <em>immediate mode</em> GUI library, we need to store the states of our app directly in the app struct:</p>
+<pre><code class="language-rust">pub struct MyApp {
+    rocks: HashSet&lt;IVec2&gt;,
+    start: IVec2,
+    x_boundary: i32,
+    y_boundary: i32,
+    frontier: HashSet&lt;IVec2&gt;,
+    speed: u32,
+    paused: bool,
+    step: bool,
+    remaining_steps: u32,
+}
+
+impl MyApp {
+    pub fn new() -&gt; Self {
+        let input = include_str!(&quot;../input.txt&quot;);
+        let mut rocks = HashSet::new();
+        let mut start = IVec2::new(0, 0);
+        for (y, line) in input.lines().enumerate() {
+            for (x, c) in line.chars().enumerate() {
+                if c == '#' {
+                    rocks.insert(IVec2::new(x as i32, y as i32));
+                } else if c == 'S' {
+                    start = IVec2::new(x as i32, y as i32);
+                }
+            }
+        }
+        let x_boundary = input.lines().next().unwrap().len() as i32;
+        let y_boundary = input.lines().count() as i32;
+        MyApp {
+            rocks,
+            start,
+            x_boundary,
+            y_boundary,
+            frontier: HashSet::from_iter(std::iter::once(start)),
+            speed: 1,
+            paused: true,
+            step: false,
+            remaining_steps: 64,
+        }
+    }
+}
+
+</code></pre>
+<p>The movement will update the state of the app:</p>
+<pre><code class="language-rust">impl MyApp {
+    pub fn update_state(&amp;mut self) {
+        self.remaining_steps -= 1;
+        let mut new_frontier: HashSet&lt;IVec2&gt; = HashSet::new();
+
+        for pos in self.frontier.iter() {
+            new_frontier.extend(
+                [IVec2::X, IVec2::NEG_X, IVec2::Y, IVec2::NEG_Y]
+                    .into_iter()
+                    .filter_map(|offset| {
+                        let cell = offset + *pos;
+                        if cell.x &lt; 0
+                            || cell.x &gt;= self.x_boundary
+                            || cell.y &lt; 0
+                            || cell.y &gt;= self.y_boundary
+                            || self.rocks.contains(&amp;cell)
+                        {
+                            return None;
+                        }
+                        Some(cell)
+                    }),
+            )
+        }
+        self.frontier = new_frontier;
+    }
+}
+</code></pre>
+<p>To make our app a renderable egui app, we need to clarify the ui component of each frame of the app:</p>
+<pre><code class="language-rust">impl eframe::App for MyApp {
+    fn update(&amp;mut self, ctx: &amp;egui::Context, _frame: &amp;mut eframe::Frame) {
+        egui::TopBottomPanel::top(&quot;top_panel&quot;).show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.style_mut().spacing.interact_size.y *= 1.4;
+                ui.style_mut()
+                    .text_styles
+                    .get_mut(&amp;egui::TextStyle::Button)
+                    .unwrap()
+                    .size *= 1.4;
+
+                if ui.button(&quot;Reset&quot;).clicked() {
+                    *self = Self::new();
+                }
+                if ui.button(&quot;Step&quot;).clicked() {
+                    self.step = true;
+                }
+
+                let paused = self.paused;
+                ui.toggle_value(&amp;mut self.paused, if paused { &quot;▶&quot; } else { &quot;⏸&quot; });
+            });
+
+            ui.horizontal(|ui| {
+                ui.label(&quot;Remaining steps: &quot;);
+                ui.add(egui::DragValue::new(&amp;mut self.remaining_steps).speed(1.0));
+                ui.label(&quot;Frontier count: &quot;);
+                ui.add(egui::Label::new(self.frontier.len().to_string()));
+            });
+
+            ui.horizontal(|ui| {
+                ui.label(&quot;Speed: &quot;);
+                ui.add(egui::Slider::new(&amp;mut self.speed, 1..=20).prefix(&quot;x&quot;));
+            });
+        });
+
+        if self.remaining_steps &gt; 0 &amp;&amp; self.step {
+            self.update_state();
+            self.step = false;
+        } else if !self.paused {
+            for _ in 0..self.speed.min(self.remaining_steps) {
+                self.update_state();
+            }
+            ctx.request_repaint_after(Duration::from_millis(25));
+        }
+
+        egui::CentralPanel::default().show(ctx, |ui| {
+            let mut painter_size = ui.available_size_before_wrap();
+            if !painter_size.is_finite() {
+                painter_size = egui::vec2(500.0, 500.0);
+            }
+
+            const SIDE: f32 = 5.0;
+
+            let (res, painter) = ui.allocate_painter(painter_size, egui::Sense::hover());
+            let center = res.rect.center().to_vec2();
+
+            let to_panel_pos = |pos: IVec2| {
+                (egui::vec2(pos.x as f32 * SIDE, pos.y as f32 * SIDE) + center).to_pos2()
+            };
+
+            let grid_center = IVec2::new(self.x_boundary / 2, self.y_boundary / 2);
+            for (x, y) in (0..self.x_boundary).cartesian_product(0..self.y_boundary) {
+                let pos = IVec2::new(x, y);
+                let shift_from_center = pos - grid_center;
+                let pannel_pos = to_panel_pos(shift_from_center);
+                if pos == self.start {
+                    painter.circle_stroke(
+                        pannel_pos,
+                        2.0,
+                        egui::Stroke::new(1.0, egui::Color32::GREEN),
+                    );
+                } else if self.rocks.contains(&amp;pos) {
+                    painter.rect_filled(
+                        egui::Rect::from_center_size(pannel_pos, egui::vec2(SIDE, SIDE)),
+                        0.0,
+                        egui::Color32::WHITE,
+                    );
+                } else if self.frontier.contains(&amp;pos) {
+                    painter.circle_stroke(
+                        pannel_pos,
+                        1.0,
+                        egui::Stroke::new(1.0, egui::Color32::RED),
+                    );
+                } else {
+                    painter.circle_filled(pannel_pos, 0.5, egui::Color32::GRAY);
+                }
+            }
+        });
+    }
+}
+</code></pre>
+<p>Finally, the entry point of our app in <code>main.rs</code>(generated by the template) looks like:</p>
+<pre><code class="language-rust">// When compiling natively:
+#[cfg(not(target_arch = &quot;wasm32&quot;))]
+fn main() -&gt; eframe::Result&lt;()&gt; {
+    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+
+    let native_options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([1280.0, 720.0])
+            .with_min_inner_size([320.0, 180.0]),
+        ..Default::default()
+    };
+    eframe::run_native(
+        &quot;Count steps&quot;,
+        native_options,
+        Box::new(|_| Box::new(aoc23_day21::MyApp::new())),
+    )
+}
+
+// When compiling to web using trunk:
+#[cfg(target_arch = &quot;wasm32&quot;)]
+fn main() {
+    // Redirect `log` message to `console.log` and friends:
+    eframe::WebLogger::init(log::LevelFilter::Debug).ok();
+
+    let web_options = eframe::WebOptions::default();
+
+    wasm_bindgen_futures::spawn_local(async {
+        eframe::WebRunner::new()
+            .start(
+                &quot;canvas&quot;, // hardcode it
+                web_options,
+                Box::new(|_| Box::new(aoc23_day21::MyApp::new())),
+            )
+            .await
+            .expect(&quot;failed to start eframe&quot;);
+    });
+}
+</code></pre>
+<p>That's it, we can run and test the app locally with:</p>
+<pre><code class="language-shell">cargo run --release
+</code></pre>
+<p>To build the wasm target, we need to ensure the wasm target is added to rust toolchain:</p>
+<pre><code class="language-shell">rustup target add wasm32-unknown-unknown
+</code></pre>
+<p>We use <a href="https://trunkrs.dev/">Trunk</a> to build for web target:</p>
+<pre><code class="language-shell">cargo install --locked trunk
+</code></pre>
+<p>To test and run built web target locally:</p>
+<pre><code class="language-shell">trunk serve
+firefox http://127.0.0.1:8080/index.html#dev
+</code></pre>
+<p>To build the release version before deploying:</p>
+<pre><code class="language-shell">trunk build --release
+</code></pre>
+<p>It will generate a <code>dist</code> directory as a &quot;static html&quot; website:</p>
+<pre><code class="language-shell">$ ll dist 
+.rw-r--r-- inm inm  29 KB Sat Dec 23 21:09:39 2023  aoc23-day21-80cd9280872e05828e1485b2021a054e2033b6a658fe46dc09f6f5859a7f627fda24ec349302935b108a8706a9ef32c9.js
+.rw-r--r-- inm inm 2.3 MB Sat Dec 23 21:09:53 2023  aoc23-day21-80cd9280872e05828e1485b2021a054e2033b6a658fe46dc09f6f5859a7f627fda24ec349302935b108a8706a9ef32c9_bg.wasm
+.rw-r--r-- inm inm 1.9 KB Sat Dec 23 21:09:53 2023  index.html
+</code></pre>
+<p>I copy all the files under dist to the blog's <code>static</code> directory. I create an additional directory under <code>static</code> named <code>wasm_gen</code>
+to store the assets and updated the site generation code to copy the whole <code>wasm_gen</code> directory to the generated site directory.
+Adding the raw html <code>&lt;iframe&gt;</code> tag in the post markdown:</p>
+<pre><code class="language-html">&lt;iframe class=&quot;wasm-embed&quot;, src=&quot;../../../wasm_gen/2023-12-23-AOC-Day21/part1/index.html&quot; style=&quot;width: 100%; height: 700px;&quot;&gt;&lt;/iframe&gt;
+</code></pre>
+<p>Additionally, we need to replace all the absolute path <code>/</code> in the <code>index.html</code> with <code>./</code> to make the embeded html work properly.
+Finally, We get the embeded wasm as below:</p>
+<iframe class="wasm-embed" src="../../../wasm_gen/2023-12-23-AOC-Day21/part1/index.html" style="width: 100%; height: 700px;"></iframe>
+<p>Cheers!</p>
+<h2><a href="#part2" aria-hidden="true" class="anchor" id="part2"></a>Part2</h2>
+<p>I spent too much time to get this part's visualization to work, so that I have not done the puzzel itself yet. Anyway, the purpose of
+AOC is to learn something new, which is <code>egui</code> for this time.</p>
+<p>The main difference between this one and that in part1 is we get to deal with the periodic boundary condition. And for visualization,
+we need to fit much larger tiles into the panel. What I decide to add is <code>ScrollArea</code>.</p>
+<p>There are some tricky(at least for me) concepts when dealing with the <code>ScrollArea</code> in <code>egui</code> and just spent me some time to figure out:</p>
+<ul>
+<li>
+<p><code>viewport</code>: This is the current <em>visible part</em> on the panel. <code>ScrollArea</code> use <code>show_viewport</code> to paint only the visible parts, which
+results in great performance gain. When we scroll the contents, the viewport(which is just a <code>Rect</code>) will change with the scrolling. The
+coordinates of the rect is the <em>absolute</em> value on the current panel.</p>
+</li>
+<li>
+<p><code>ui.min_rect()</code>: When we call this within the closure of <code>show_viewport</code>, the coordinates of the <code>min_rect()</code> is the <em>relative</em> value
+with respect to the current panel. When we scroll down the area, the y-coordinates of the <code>min_rect()</code> will decrease.</p>
+</li>
+<li>
+<p><code>pos</code> passed to painter: The position to paint shapes is the <em>relative</em> value with respect to the current panel.</p>
+</li>
+</ul>
+<p>After some attempts, I finally made it work:</p>
+<pre><code class="language-rust">impl eframe::App for MyApp {
+    fn update(&amp;mut self, ctx: &amp;egui::Context, _frame: &amp;mut eframe::Frame) {
+        egui::TopBottomPanel::top(&quot;top_panel&quot;).show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.style_mut().spacing.interact_size.y *= 1.4;
+                ui.style_mut()
+                    .text_styles
+                    .get_mut(&amp;egui::TextStyle::Button)
+                    .unwrap()
+                    .size *= 1.4;
+
+                if ui.button(&quot;Reset&quot;).clicked() {
+                    *self = Self::new();
+                }
+                if ui.button(&quot;Step&quot;).clicked() {
+                    self.step = true;
+                }
+
+                let paused = self.paused;
+                ui.toggle_value(&amp;mut self.paused, if paused { &quot;▶&quot; } else { &quot;⏸&quot; });
+            });
+
+            ui.horizontal(|ui| {
+                ui.label(&quot;Tile size: &quot;);
+                ui.add(egui::DragValue::new(&amp;mut self.tile_size).speed(1.0));
+            });
+
+            ui.horizontal(|ui| {
+                ui.label(&quot;Remaining steps: &quot;);
+                ui.add(egui::DragValue::new(&amp;mut self.remaining_steps).speed(1.0));
+                ui.label(&quot;Frontier count: &quot;);
+                ui.add(egui::Label::new(self.frontier.len().to_string()));
+            });
+
+            ui.horizontal(|ui| {
+                ui.label(&quot;Speed: &quot;);
+                ui.add(egui::Slider::new(&amp;mut self.speed, 1..=20).prefix(&quot;x&quot;));
+            });
+        });
+
+        if self.remaining_steps &gt; 0 &amp;&amp; self.step {
+            self.update_state();
+            self.step = false;
+        } else if !self.paused {
+            for _ in 0..self.speed.min(self.remaining_steps) {
+                self.update_state();
+            }
+            ctx.request_repaint_after(Duration::from_millis(25));
+        }
+
+        egui::CentralPanel::default().show(ctx, |ui| {
+            egui::ScrollArea::both()
+                .auto_shrink(true)
+                .show_viewport(ui, |ui, viewport| {
+                    const SIDE: f32 = 3.0;
+                    let repeat = self.tile_size as i32;
+
+                    let ui_width = ((2 * repeat + 1) * self.x_boundary) as f32 * SIDE;
+                    let ui_height = ((2 * repeat + 1) * self.y_boundary) as f32 * SIDE;
+                    ui.set_width(ui_width.max(viewport.width()));
+                    ui.set_height(ui_height.max(viewport.height()));
+
+                    let painter = ui.painter();
+                    let absolute_center = egui::Pos2::new(ui_width / 2., ui_height / 2.);
+                    let grid_center = IVec2::new(self.x_boundary / 2, self.y_boundary / 2);
+
+                    let to_grid_pos = |pos: egui::Pos2| {
+                        let from_center = pos - absolute_center;
+                        IVec2::new(
+                            (from_center.x / SIDE).round() as i32,
+                            (from_center.y / SIDE).round() as i32,
+                        ) + grid_center
+                    };
+
+                    let relative_center = ui.min_rect().center();
+                    let to_panel_pos = |pos: IVec2| {
+                        let from_center = pos - grid_center;
+                        relative_center
+                            + egui::Pos2::new(from_center.x as f32, from_center.y as f32).to_vec2()
+                                * SIDE
+                    };
+
+                    let grid_viewport_min = to_grid_pos(viewport.min);
+                    let grid_viewport_max = to_grid_pos(viewport.max);
+                    let grid_min_x = (-repeat * self.x_boundary).max(grid_viewport_min.x);
+                    let grid_min_y = (-repeat * self.y_boundary).max(grid_viewport_min.y);
+                    let grid_max_x = ((repeat + 1) * self.x_boundary).min(grid_viewport_max.x);
+                    let grid_max_y = ((repeat + 1) * self.y_boundary).min(grid_viewport_max.y);
+
+                    for (x, y) in (grid_min_x..grid_max_x).cartesian_product(grid_min_y..grid_max_y)
+                    {
+                        let grid_pos = IVec2::new(x, y);
+                        let panel_pos = to_panel_pos(grid_pos);
+                        if grid_pos == self.start {
+                            painter.circle_stroke(
+                                panel_pos,
+                                SIDE - 1.,
+                                egui::Stroke::new(2.0, egui::Color32::GREEN),
+                            );
+                        } else if self.rocks.contains(&amp;wrap_around(
+                            grid_pos,
+                            self.x_boundary,
+                            self.y_boundary,
+                        )) {
+                            painter.rect_filled(
+                                egui::Rect::from_center_size(panel_pos, egui::vec2(SIDE, SIDE)),
+                                0.0,
+                                egui::Color32::WHITE,
+                            );
+                        } else if self.frontier.contains(&amp;grid_pos) {
+                            painter.circle_stroke(
+                                panel_pos,
+                                1.0,
+                                egui::Stroke::new(1.0, egui::Color32::RED),
+                            );
+                        } else {
+                            painter.circle_filled(panel_pos, 0.5, egui::Color32::GRAY);
+                        }
+                    }
+                });
+        });
+    }
+}
+
+fn wrap_around(pos: IVec2, x_boundary: i32, y_boundary: i32) -&gt; IVec2 {
+    IVec2::new(pos.x.rem_euclid(x_boundary), pos.y.rem_euclid(y_boundary))
+}
+</code></pre>
+<p>And this is the visualization:</p>
+<iframe class="wasm-embed" src="../../../wasm_gen/2023-12-23-AOC-Day21/part2/index.html" style="width: 100%; height: 700px;"></iframe>
+<hr />
+<p>Update at Dec.26th:</p>
+<p>Finially I got this puzzel done. Observing that the step counts grow as a diamond shape with the help of visualization, there should be
+some structure underlying the puzzel input to make it solvable. We observe that the input is a $131 \times 131$ grid and the counts grow
+quadratically with the steps growing a multiple of the grid width. More superisingly, the input steps $26501365 = 202300 \times 131 + 65$,
+which is a multiple of grid width plus the half width!</p>
+<p>The we naturally try to fit the counts vs. steps with a quadratic polynomial. Fitting the (65, 131+65, 2*131+65) steps with counts (3744, 33417, 92680),
+with the <a href="https://en.wikipedia.org/wiki/Lagrange_polynomial">Lagrange polynomial</a>, we get:</p>
+<p>$$N_{count}(x) = 14795x^2 + 14878x + 3744$$</p>
+<p>Then we have the final answer: $N_{count}(202300) = 605492675373144$!</p>
+<h2><a href="#reference" aria-hidden="true" class="anchor" id="reference"></a>Reference</h2>
+<ul>
+<li><a href="https://fasterthanli.me/series/advent-of-code-2022/part-9">fasterthanlime's aoc22 day9</a></li>
+<li><a href="https://docs.rs/egui/0.24.1/egui/index.html">egui's docs</a></li>
+<li><a href="https://github.com/emilk/egui/blob/master/crates/egui_demo_lib/src/demo/scrolling.rs#L186">egui's demo lib</a></li>
+<li><a href="https://www.egui.rs/#Demo">egui's web demos</a></li>
+<li><a href="https://github.com/emilk/eframe_template">eframe template</a></li>
+</ul>
+
+    </div>
+  </div>
+</section>
+
+    <!-- scripts -->
+<script src="../../../scripts/highlight.js"></script>
+<script>hljs.highlightAll();</script>
+<script defer src="../../../scripts/katex.js"></script>
+<script defer src="../../../scripts/auto-render.js" onload="renderMathInElement(document.body);"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          // customised options
+          // • auto-render specific keys, e.g.:
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          // • rendering keys, e.g.:
+          throwOnError : false
+        });
+    });
+</script>
+
+  </body>
+</html>

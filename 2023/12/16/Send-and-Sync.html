@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Send and Sync | Inm&#x27;s Blog</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Inm Zhang's personal blog.">
+    <!-- favicons -->
+<link rel="icon" type="image/svg+xml" href="../../../images/cuddlyferris.svg">
+<!-- styles -->
+<link rel="stylesheet" href="../../../styles/vendor.css"/>
+<link rel="stylesheet" href="../../../styles/fonts.css"/>
+<link rel="stylesheet" href="../../../styles/app.css"/>
+<link rel="stylesheet" href="../../../styles/highlight.css"/>
+<link rel="stylesheet" href="../../../styles/katex.css"/>
+
+  </head>
+  <body>
+    <nav class="flex flex-row justify-center justify-end-l items-center flex-wrap ph2 pl3-ns pr4-ns">
+  <div class="brand flex-auto w-100 w-auto-l self-start tc tl-l">
+    <a href="../../../">
+     <img class="v-mid ml0-l" alt="Ferris Logo" src="../../../images/cuddlyferris.svg"> 
+     <span class="dib ml1 ml0-l">Inm&#x27;s Blog</span>
+    </images>
+  </div>
+  
+  <ul class="nav list w-100 w-auto-l flex flex-none flex-row flex-wrap justify-center justify-end-l items-center pv2 ph0 ph4-ns">
+    <li class="tc pv2 ph2 ph4-ns flex-20-s"><a href="https://inmzhang.github.io/paste">Clipboard</a></li>
+    <li class="tc pv2 ph2 ph4-ns flex-20-s"><a href="https://github.com/inmzhang">Github</a></li>
+    <li class="tc pv2 ph2 ph4-ns flex-20-s"><a href="https://scholar.google.com/citations?user=fhTGnZwAAAAJ&hl=en">Scholar</a></li>
+    <li class="tc pv2 ph2 ph4-ns flex-20-s"><a href="https://github.com/inmzhang/blog">Source</a></li>
+  </ul>
+</nav>
+
+<section id="Send and Sync" class="white">
+  <div class="w-100 mw-none ph3 mw8-m mw8-l center f3">
+    <header>
+      <h2>Send and Sync</h2>
+      <div class="highlight mt2 mb3"></div>
+    </header>
+
+    <div class="publish-date-author">Dec. 16, 2023 &middot; Yiming Zhang
+    
+    </div>
+
+    <div class="post">
+      <p><strong>Send</strong> and <strong>Sync</strong> are the two fundamental traits to Rust's concurrency but to understand
+them is kind of hard. Here is a simple summary of the materials related to this topic.</p>
+<p>The official definition of these two traits are:</p>
+<ul>
+<li><strong>Send</strong>: Types that can be transferred across thread boundaries.</li>
+<li><strong>Synd</strong>: Types for which it is safe to share references between threads.</li>
+</ul>
+<p>A more understandable and clear definition might be:</p>
+<ul>
+<li><strong>Send</strong>: Types with safe <em>unique access</em> between different threads.</li>
+<li><strong>Sync</strong>: Types with safe <em>shared access</em> between different threads.</li>
+</ul>
+<p>The <em>unique access</em> here includes both unique ownership(send by value) as well as the unique
+reference(send by <code>&amp;mut T</code>).</p>
+<p>The reference rules in rust make sure most <em>primitive types</em> are both <strong>Send</strong> and <strong>Sync</strong>
+inheriently. Aside from the raw pointers, the <em>interior mutability</em> is the source of the most
+of <code>!Sync</code> and <code>!Send</code>.</p>
+<p>To make these two traits work well, there are already some firewalls:</p>
+<ul>
+<li>They are <code>unsafe</code> traits: other unsafe code can assume that they are correctly implemented.
+Since they're marker traits (they have no associated items like methods), correctly implemented
+simply means that they have the intrinsic properties an implementor should have. Incorrectly
+implementing <code>Send</code> or <code>Sync</code> can cause Undefined Behavior.</li>
+<li><code>Send</code> and <code>Sync</code> are also automatically derived traits. This means that, unlike every other trait,
+if a type is composed entirely of <code>Send</code> or <code>Sync</code> types, then it is Send or Sync.</li>
+</ul>
+<h2><a href="#sync" aria-hidden="true" class="anchor" id="sync"></a><code>!Sync</code></h2>
+<p>A type is <code>!Sync</code> when the public non-<code>unsafe</code> <code>&amp;</code>-based APIs allow to perform mutation <strong>without
+synchronisation mechanisms</strong>, such as <code>Cell</code> or <code>RefCell</code>.</p>
+<p>However, if all the public non-<code>unsafe</code> <code>&amp;</code>-based APIs that could perform mutation do guard against
+data races through synchronization primitives. In such cases, such as with <code>AtomicBool</code>, <code>AtomicU8</code>, 
+<code>Atomic</code>..., as well as <code>Mutex</code> or <code>RwLock</code>, we get <code>Sync</code>-ness back!</p>
+<p>Additionally, Since sharing is transitive (if you share a shared reference to something, then you are
+ultimately sharing that thing: from a <code>&amp;&amp;T</code> one can get a <code>&amp;T</code>, and vice versa): <code>T : Sync ⇔ &amp;'_ T : Sync</code>.</p>
+<h2><a href="#send" aria-hidden="true" class="anchor" id="send"></a><code>!Send</code></h2>
+<p>When <code>T: !Sync</code>, consider type subject to:</p>
+<ul>
+<li>when owned, yield a <code>&amp;T</code>(e.g. <code>&amp;T</code>, <code>Arc&lt;T&gt;</code>, <code>&amp;Arc&lt;T&gt;</code> ...);</li>
+<li>be &quot;copyable&quot; or cloneable;</li>
+</ul>
+<p>We can share the unsafe(<code>!Sync</code>) <code>&amp;T</code> across the thread by first <em>copying or cloning</em> the object then
+sending them across the threads. Now, we have the original handle, and the sent one, which refer to the
+same entity (it is thus <em>shared</em>), from across thread boundaries. Thus these type should not be <code>Send</code>
+to guarantee the safety of the shared access.</p>
+<h2><a href="#summary" aria-hidden="true" class="anchor" id="summary"></a>Summary</h2>
+<p>To summarize up, we have following rules:</p>
+<ul>
+<li><code>T</code>: <code>Sync</code> ⇔ <code>&amp;T</code>: <code>Send</code> (by definition)</li>
+<li><code>&amp;mut T</code>: <code>Send</code> ⇔ <code>T</code>: <code>Send</code>(by definition)</li>
+<li><code>&amp;T</code>/<code>&amp;mut T</code>: <code>Sync</code> ⇔ <code>T</code>: <code>Sync</code>(by sharing transitive)</li>
+</ul>
+<p>When we lose <code>Sync</code> somewhere, we lose <em>both</em> <code>Sync</code> and <code>Send</code> at the next level of indirection, hence
+why we mostly encounter:</p>
+<ul>
+<li><code>Send + !Sync</code> types, which are the &quot;original <code>!Sync</code> type&quot; (<code>Cell</code> and <code>RefCell</code>)</li>
+<li><code>!Send + !Sync</code>, which are the types that manipulate shared handles to <code>!Sync</code> types. <code>Rc&lt;T&gt;</code> is such an example.</li>
+</ul>
+<p>Additionally, raw pointers are neither <code>Send</code> nor <code>Sync</code> since they have no safety guards.</p>
+<h2><a href="#reference" aria-hidden="true" class="anchor" id="reference"></a>Reference</h2>
+<ul>
+<li><a href="https://doc.rust-lang.org/std/marker/trait.Send.html">Rust docs for <code>std::marker::Send</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/marker/trait.Sync.html">Rust docs for <code>std::marker::Sync</code></a></li>
+<li><a href="https://doc.rust-lang.org/nomicon/send-and-sync.html">The Nomicon</a></li>
+<li><a href="https://users.rust-lang.org/t/example-of-a-type-that-is-not-send/59835">Related discussion</a></li>
+</ul>
+
+    </div>
+  </div>
+</section>
+
+    <!-- scripts -->
+<script src="../../../scripts/highlight.js"></script>
+<script>hljs.highlightAll();</script>
+<script defer src="../../../scripts/katex.js"></script>
+<script defer src="../../../scripts/auto-render.js" onload="renderMathInElement(document.body);"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          // customised options
+          // • auto-render specific keys, e.g.:
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          // • rendering keys, e.g.:
+          throwOnError : false
+        });
+    });
+</script>
+
+  </body>
+</html>

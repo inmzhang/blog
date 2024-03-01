@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>About the blog | Inm&#x27;s Blog</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Inm Zhang's personal blog.">
+    <!-- favicons -->
+<link rel="icon" type="image/svg+xml" href="../../../images/cuddlyferris.svg">
+<!-- styles -->
+<link rel="stylesheet" href="../../../styles/vendor.css"/>
+<link rel="stylesheet" href="../../../styles/fonts.css"/>
+<link rel="stylesheet" href="../../../styles/app.css"/>
+<link rel="stylesheet" href="../../../styles/highlight.css"/>
+<link rel="stylesheet" href="../../../styles/katex.css"/>
+
+  </head>
+  <body>
+    <nav class="flex flex-row justify-center justify-end-l items-center flex-wrap ph2 pl3-ns pr4-ns">
+  <div class="brand flex-auto w-100 w-auto-l self-start tc tl-l">
+    <a href="../../../">
+     <img class="v-mid ml0-l" alt="Ferris Logo" src="../../../images/cuddlyferris.svg"> 
+     <span class="dib ml1 ml0-l">Inm&#x27;s Blog</span>
+    </images>
+  </div>
+  
+  <ul class="nav list w-100 w-auto-l flex flex-none flex-row flex-wrap justify-center justify-end-l items-center pv2 ph0 ph4-ns">
+    <li class="tc pv2 ph2 ph4-ns flex-20-s"><a href="https://inmzhang.github.io/paste">Clipboard</a></li>
+    <li class="tc pv2 ph2 ph4-ns flex-20-s"><a href="https://github.com/inmzhang">Github</a></li>
+    <li class="tc pv2 ph2 ph4-ns flex-20-s"><a href="https://scholar.google.com/citations?user=fhTGnZwAAAAJ&hl=en">Scholar</a></li>
+    <li class="tc pv2 ph2 ph4-ns flex-20-s"><a href="https://github.com/inmzhang/blog">Source</a></li>
+  </ul>
+</nav>
+
+<section id="About the blog" class="white">
+  <div class="w-100 mw-none ph3 mw8-m mw8-l center f3">
+    <header>
+      <h2>About the blog</h2>
+      <div class="highlight mt2 mb3"></div>
+    </header>
+
+    <div class="publish-date-author">Nov. 26, 2023 &middot; Yiming Zhang
+    
+    </div>
+
+    <div class="post">
+      <p>I've decided to launch a new blog to record my learning journey.
+In the very first post, I'd like to talk about why I want it
+and how I started.</p>
+<h2><a href="#why" aria-hidden="true" class="anchor" id="why"></a>Why</h2>
+<p>I am lazy.</p>
+<p>I did not have the good habbit to systematically document and review
+the things I learned. It is quite bad. I am not the type of smart
+guy who can retain information effortlessly. I forgot quickly.
+This is a disastor for learning, especially for a PhD student. Finally,
+I resolved to make a change, leading to the creation of this blog.&quot;</p>
+<p>The main focus of this blog will be quantum computing(superconducting platform)
+and programming. Superconducting qubit is what I majored in for my PhD and
+programming is my hobby.</p>
+<h2><a href="#how" aria-hidden="true" class="anchor" id="how"></a>How</h2>
+<p>I have used some static site generators like <code>jekyll</code> and <code>hugo</code>, which are both
+great. However, for this time, I choose to fork the <a href="https://github.com/rust-lang/blog.rust-lang.org">The Rust Blog</a>
+repo and use the very basic functionality out of it.</p>
+<p>Firstly, I love the style of the rust blog. It's simple and consice. Secondly, the
+generator codebase is pretty small. I can read through the source code easilly and
+make whatever changes I want at ease.</p>
+<p>Here are the things I changed for the blog:</p>
+<ul>
+<li>Cut off most unrelevant informations from it, e.g. the feed and metas in the headers.</li>
+<li>Add <a href="https://katex.org/">katex</a> for math typesetting support to the code.</li>
+<li>Update the version of <code>highlight.js</code> to support the most common set of languages.</li>
+<li>Change the functionality of <em>release</em> file header. Now the posts with <code>release=false</code>
+will only be rendered when the <code>PREVIEW</code> env var is on. This is for the drafting purpose.</li>
+<li>Add justfile for building and serving</li>
+</ul>
+<p>That's all for now. Here's the blog. Fingers crossed I can maintain it!</p>
+
+    </div>
+  </div>
+</section>
+
+    <!-- scripts -->
+<script src="../../../scripts/highlight.js"></script>
+<script>hljs.highlightAll();</script>
+<script defer src="../../../scripts/katex.js"></script>
+<script defer src="../../../scripts/auto-render.js" onload="renderMathInElement(document.body);"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+          // customised options
+          // • auto-render specific keys, e.g.:
+          delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+          ],
+          // • rendering keys, e.g.:
+          throwOnError : false
+        });
+    });
+</script>
+
+  </body>
+</html>
